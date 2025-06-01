@@ -1,0 +1,31 @@
+---
+- name: Wait for the server to be SSH reachable via IPv4
+  ansible.builtin.wait_for:
+    host: "{{ hcloud_server_ipv4 }}"
+    port: 22
+    search_regex: OpenSSH
+    delay: 3
+    timeout: 300
+
+# FIXME: There is probably a better way, but this is good enough for now.
+- name: Scan for IPv4 SSH host keys
+  ansible.builtin.command: "ssh-keyscan -q {{ item }}"
+  with_items:
+    - "{{ hcloud_server_ipv4 }}"
+    - "{{ hcloud_server_ipv6 }}"
+    - "{{ hcloud_server_fqdn }}"
+  changed_when: false
+  register: ssh_scan
+
+- name: Trust new IPv4 SSH host keys
+  ansible.builtin.known_hosts:
+    name: "{{ item.name }}"
+    key: "{{ item.key | join('\n') }}"
+    state: present
+  with_items:
+    - name: "{{ hcloud_server_ipv4 }}"
+      key: "{{ ssh_scan.results[0].stdout_lines }}"
+    - name: "{{ hcloud_server_ipv6 }}"
+      key: "{{ ssh_scan.results[1].stdout_lines }}"
+    - name: "{{ hcloud_server_fqdn }}"
+      key: "{{ ssh_scan.results[2].stdout_lines }}"

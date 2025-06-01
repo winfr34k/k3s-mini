@@ -1,0 +1,31 @@
+---
+- name: Reserve IPs for the host
+  hetzner.hcloud.primary_ip:
+    api_token: "{{ hcloud_api_token }}"
+    name: "{{ hcloud_server_name }}-{{ item }}"
+    type: "{{ item }}"
+    delete_protection: "{{ hcloud_server_protect_ips }}"
+    datacenter: "{{ hcloud_server_datacenter }}"
+    state: present
+  with_items:
+    - ipv4
+    - ipv6
+  register: ips
+
+- name: Set IPs as fact to make them reusable
+  ansible.builtin.set_fact:
+    hcloud_server_ipv4: "{{ ips.results[0].hcloud_primary_ip.ip }}"
+    hcloud_server_ipv6: "{{ ips.results[1].hcloud_primary_ip.ip | replace('::/64', '::1') }}"
+
+- name: Configure Reverse Lookup
+  hetzner.hcloud.rdns:
+    api_token: "{{ hcloud_api_token }}"
+    ip_address: "{{ item.ip_address }}"
+    dns_ptr: "{{ hcloud_server_fqdn }}"
+    primary_ip: "{{ hcloud_server_name }}-{{ item.type }}"
+    state: present
+  with_items:
+    - ip_address: "{{ hcloud_server_ipv4 }}"
+      type: ipv4
+    - ip_address: "{{ hcloud_server_ipv6 }}"
+      type: ipv6

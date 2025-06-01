@@ -1,0 +1,32 @@
+---
+- name: Destroy cloud resources
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Grab server info, if any
+      hetzner.hcloud.server_info:
+        api_token: "{{ hcloud_api_token }}"
+        name: "{{ server_name }}"
+      ignore_errors: true
+      register: server
+
+    - name: Remove the host
+      hetzner.hcloud.server:
+        api_token: "{{ hcloud_api_token }}"
+        name: "{{ server_name }}"
+        state: absent
+
+    - name: Clean-up SSH host keys
+      ansible.builtin.known_hosts:
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ server_info.ipv4_address | default('') }}"
+        - "{{ server_info.ipv6 | default('') | replace('::/64', '::1') }}"
+        - "{{ server_fqdn }}"
+      vars:
+        server_info: "{{ server.hcloud_server_info[0] | default(None) }}"
+  vars:
+    server_name: k3s
+    server_fqdn: "{{ server_name }}.{{ zone }}"
+    zone: quarkinside.de

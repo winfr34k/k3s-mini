@@ -1,0 +1,17 @@
+---
+k3s_version: v1.33.1+k3s1
+k3s_tls_san: k3s.example.com
+k3s_force_installation: false
+k3s_networks:
+  cluster:
+    ipv4: 10.42.0.0/16
+    ipv6: 2001:cafe:42::/56
+  service:
+    ipv4: 10.43.0.0/16
+    ipv6: 2001:cafe:43::/112
+  masquerade_ipv6: true
+k3s_exposed_services:
+  - kubeapi
+  - http
+  - https
+k3s_overwrite_local_kubeconfig: true

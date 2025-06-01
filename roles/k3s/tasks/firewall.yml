@@ -1,0 +1,31 @@
+---
+- name: Trust cluster and service network traffic
+  ansible.posix.firewalld:
+    zone: trusted
+    source: "{{ item }}"
+    immediate: true
+    permanent: true
+    state: enabled
+  with_items:
+    - "{{ k3s_networks.cluster.ipv4 }}"
+    - "{{ k3s_networks.cluster.ipv6 }}"
+    - "{{ k3s_networks.service.ipv4 }}"
+    - "{{ k3s_networks.service.ipv6 }}"
+
+- name: Expose Kube API service, if desired
+  ansible.posix.firewalld:
+    zone: public
+    port: 6443/tcp
+    immediate: true
+    permanent: true
+    state: enabled
+  when: "'kubeapi' in k3s_exposed_services"
+
+- name: Expose any other service, if any
+  ansible.posix.firewalld:
+    zone: public
+    service: "{{ item }}"
+    immediate: true
+    permanent: true
+    state: enabled
+  with_items: "{{ k3s_exposed_services | reject('search', 'kubeapi') }}"

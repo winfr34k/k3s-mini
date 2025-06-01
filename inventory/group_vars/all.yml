@@ -1,0 +1,2 @@
+---
+hcloud_api_token: "{{ lookup('ansible.builtin.unvault', 'hcloud.token') | string | trim }}"

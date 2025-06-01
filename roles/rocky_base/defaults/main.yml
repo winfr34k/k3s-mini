@@ -1,0 +1,7 @@
+---
+rocky_base_additional_tools:
+  - bash-completion
+  - vim
+  - htop
+  - tmux
+  - tcpdump

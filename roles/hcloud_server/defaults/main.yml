@@ -1,0 +1,10 @@
+---
+hcloud_server_name: host
+hcloud_server_type: cax11
+hcloud_server_image: rocky-9
+hcloud_server_fqdn: "{{ hcloud_server_name }}.{{ hcloud_server_dns_zone }}"
+hcloud_server_ssh_keys:
+  - default
+hcloud_server_protect_ips: true
+hcloud_server_datacenter: nbg1-dc3
+hcloud_server_dns_zone: example.com

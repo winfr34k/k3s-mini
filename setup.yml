@@ -1,0 +1,21 @@
+---
+- name: Provide cloud resources
+  hosts: localhost
+  gather_facts: false
+  tags:
+    - hcloud
+  roles:
+    - hcloud_server
+  vars:
+    hcloud_server_name: k3s
+    hcloud_server_dns_zone: quarkinside.de
+
+- name: Setup k3s host
+  hosts: k3s
+  tags:
+    - k3s
+  roles:
+    - rocky_base
+    - k3s
+  vars:
+    k3s_tls_san: k3s.quarkinside.de

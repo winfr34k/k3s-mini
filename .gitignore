@@ -1,0 +1,11 @@
+# Editor files
+.idea/
+.vscode/
+*.swp
+
+# OS default files
+.DS_Store
+Thumbs.db
+
+# Hetzner Cloud token
+files/hcloud.token

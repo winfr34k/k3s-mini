@@ -1,0 +1,30 @@
+---
+- name: Prepare for automatic updates
+  ansible.builtin.dnf:
+    name: dnf-automatic
+    state: present
+
+# NOTE: These won't need to trigger any reloads, because the timer already runs at an interval.
+- name: Allow to download updates automatically
+  ansible.builtin.lineinfile:
+    path: /etc/dnf/automatic.conf
+    regexp: "^download_updates = no"
+    line: "download_updates = yes"
+
+- name: Allow to install updates automatically
+  ansible.builtin.lineinfile:
+    path: /etc/dnf/automatic.conf
+    regexp: "^apply_updates = no"
+    line: "apply_updates = yes"
+
+- name: Allow rebooting at around 6am
+  ansible.builtin.lineinfile:
+    path: /etc/dnf/automatic.conf
+    regexp: "^reboot = never"
+    line: "reboot = when-needed"
+
+- name: Enable automatic update installation
+  ansible.builtin.systemd_service:
+    name: dnf-automatic.timer
+    enabled: true
+    state: started

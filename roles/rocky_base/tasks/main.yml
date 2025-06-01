@@ -1,0 +1,58 @@
+---
+- name: Enable the EPEL repository
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+
+- name: Configure automatic system updates
+  ansible.builtin.import_tasks: unattended_updates.yml
+
+# NOTE: Reboot will be triggered by handler flush.
+- name: Update the system to the latest possible state
+  ansible.builtin.dnf:
+    name: "*"
+    # There is no other way to do a full upgrade, therefore this lint is incorrect here.
+    state: latest # noqa package-latest
+
+- name: Install firewalld and fail2ban
+  ansible.builtin.dnf:
+    pkg:
+      - firewalld
+      - fail2ban
+    state: present
+
+- name: Enable the firewall
+  ansible.builtin.systemd_service:
+    name: firewalld.service
+    enabled: true
+    state: started
+
+- name: Disable Cockpit traffic
+  ansible.posix.firewalld:
+    zone: public
+    service: cockpit
+    immediate: true
+    permanent: true
+    state: disabled
+
+- name: Configure fail2ban to block SSH bot traffic
+  ansible.builtin.copy:
+    src: fail2ban/jail.local
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload fail2ban
+
+- name: Enable fail2ban
+  ansible.builtin.systemd_service:
+    name: fail2ban.service
+    enabled: true
+    state: started
+
+- name: Install a few helper and debugging tools
+  ansible.builtin.dnf:
+    pkg: "{{ rocky_base_additional_tools }}"
+
+- name: Flush all notified handlers now, so any other roles have a fully setup system
+  ansible.builtin.meta: flush_handlers

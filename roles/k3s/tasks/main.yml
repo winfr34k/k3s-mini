@@ -1,0 +1,44 @@
+---
+- name: Set hostname to FQDN in TLS Subject Altname
+  ansible.builtin.hostname:
+    name: "{{ k3s_tls_san }}"
+    use: systemd
+
+- name: Setup firewall
+  ansible.builtin.import_tasks: firewall.yml
+
+- name: Check for K3s configuration to determine if we want to install it
+  ansible.builtin.stat:
+    path: /etc/rancher/k3s
+  register: k3s_path
+
+- name: Install K3s, if necessary
+  ansible.builtin.include_tasks: install_k3s.yml
+  when: "not k3s_path.stat.exists or k3s_force_installation"
+
+- name: Install Python 3 Kubernetes library
+  ansible.builtin.dnf:
+    name: python3-kubernetes
+    state: present
+
+- name: Validate the cluster is operational by observing that all Deployments enter Ready state
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: kube-system
+    name: "{{ item }}"
+    wait: true
+    wait_condition:
+      type: Available
+      reason: MinimumReplicasAvailable
+      status: true
+    wait_timeout: 300
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+  with_items:
+    - coredns
+    - local-path-provisioner
+    - metrics-server
+
+- name: Setup local kubeconfig
+  ansible.builtin.include_tasks: kubeconfig.yml
+  when: "k3s_overwrite_local_kubeconfig"

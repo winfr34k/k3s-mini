@@ -1,0 +1,21 @@
+---
+- name: Setup IPs
+  ansible.builtin.import_tasks: ips.yml
+
+- name: Ensure the host itself exists
+  hetzner.hcloud.server:
+    api_token: "{{ hcloud_api_token }}"
+    name: "{{ hcloud_server_name }}"
+    server_type: "{{ hcloud_server_type }}"
+    image: "{{ hcloud_server_image }}"
+    ipv4: "{{ hcloud_server_name }}-ipv4"
+    ipv6: "{{ hcloud_server_name }}-ipv6"
+    ssh_keys: "{{ hcloud_server_ssh_keys }}"
+    datacenter: "{{ hcloud_server_datacenter }}"
+    state: present
+
+- name: Configure local SSH client
+  ansible.builtin.import_tasks: ssh_host_keys.yml
+
+- name: Refresh inventory with new host
+  ansible.builtin.meta: refresh_inventory

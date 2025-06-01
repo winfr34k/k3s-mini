@@ -1,0 +1,42 @@
+---
+# FIXME: This is really not ideal, but it's the preffered way by the K3s team.
+#        Maybe this should move to a manual installation process to guarantee integrity a little bit.
+#        Another option would be to use the `homelab-ops` collection: https://github.com/ppat/homelab-ops-ansible/tree/main/k3s
+- name: Download K3s installer
+  ansible.builtin.get_url:
+    url: "https://get.k3s.io"
+    dest: /tmp/k3s-installer
+    owner: root
+    group: root
+    mode: "0700"
+
+# FIXME: Make this idempotent, determine if we need to do anything.
+- name: Install K3s without Traefik and Helm Controller but with Dual-Stack networking support # noqa no-changed-when
+  ansible.builtin.command: /tmp/k3s-installer
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: >-
+      --disable traefik
+      --disable-helm-controller
+      --tls-san {{ k3s_tls_san }}
+      --cluster-cidr {{ k3s_networks.cluster.ipv4 }},{{ k3s_networks.cluster.ipv6 }}
+      --service-cidr {{ k3s_networks.service.ipv4 }},{{ k3s_networks.service.ipv6 }}
+      {{ (k3s_networks.masquerade_ipv6) | ternary('--flannel-ipv6-masq', '') }}
+
+- name: Remove K3s installer
+  ansible.builtin.file:
+    path: /tmp/k3s-installer
+    state: absent
+
+- name: Ensure the K3s service is enabled and started
+  ansible.builtin.systemd_service:
+    name: k3s.service
+    enabled: true
+    state: started
+
+- name: Turn on autocomplete for kubectl
+  ansible.builtin.lineinfile:
+    path: "~{{ ansible_user_id }}/.bashrc"
+    insertafter: EOF
+    line: "\nsource <(kubectl completion bash)"
+    state: present
