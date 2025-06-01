@@ -1,0 +1,16 @@
+---
+name: ansible-lint
+on: push
+jobs:
+  build:
+    name: Ansible Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        with:
+          setup_python: "true"
+          requirements_file: "requirements.yml"
